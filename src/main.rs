@@ -1,15 +1,19 @@
 use clap::Arg;
 use std::env;
-use std::io::{self, ErrorKind, Read, Result, Write};
+use std::fs::File;
+use std::io::{self, BufReader, BufWriter, ErrorKind, Read, Result, Write};
 
 const CHUNK_SIZE: usize = 16 * 1024;
 
 fn main() -> Result<()> {
+    eprintln!();
+
     let matches = clap::Command::new("pipeviewer")
         .bin_name("pipeviewer")
-        //.arg_required_else_help(true)
         .args([
-            Arg::new("infile").long("infile").help("Read from a file instead of stdin"),
+            Arg::new("infile")
+                .long("infile")
+                .help("Read from a file instead of stdin"),
             Arg::new("outfile")
                 .short('o')
                 .long("outfile")
@@ -33,12 +37,22 @@ fn main() -> Result<()> {
         !env::var("PV_SILENT").unwrap_or(String::new()).is_empty()
     };
 
-    dbg!(infile, outfile, silent);
+    let mut reader: Box<dyn Read> = if !infile.is_empty() {
+        Box::new(BufReader::new(File::open(infile)?))
+    } else {
+        Box::new(BufReader::new(io::stdin()))
+    };
+
+    let mut writer: Box<dyn Write> = if !outfile.is_empty() {
+        Box::new(BufWriter::new(File::create(outfile)?))
+    } else {
+        Box::new(BufWriter::new(io::stdout()))
+    };
 
     let mut total_bytes = 0;
     let mut buffer = [0; CHUNK_SIZE];
     loop {
-        let num_read: usize = match io::stdin().read(&mut buffer) {
+        let num_read: usize = match reader.read(&mut buffer) {
             Ok(num) if num == 0 => break,
             Ok(num) => num,
             Err(e) => return Err(e),
@@ -47,10 +61,10 @@ fn main() -> Result<()> {
         total_bytes += num_read;
 
         if !silent {
-            eprint!("\r total_bytes: {}", total_bytes);
+            eprint!("\r{}", total_bytes);
         }
 
-        if let Err(e) = io::stdout().write_all(&buffer[..num_read]) {
+        if let Err(e) = writer.write_all(&buffer[..num_read]) {
             if e.kind() == ErrorKind::BrokenPipe {
                 break;
             }
