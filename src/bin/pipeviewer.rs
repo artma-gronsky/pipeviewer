@@ -32,5 +32,6 @@ fn main() -> Result<()> {
     read_io_result?;
     stats_io_result?;
     write_io_result?;
+
     Ok(())
 }
