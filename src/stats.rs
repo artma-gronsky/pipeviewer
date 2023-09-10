@@ -1,5 +1,5 @@
-use std::io::Result;
 use crossbeam::channel::Receiver;
+use std::io::Result;
 
 pub fn stats_loop(silent: bool, stat_rx: Receiver<usize>) -> Result<()> {
     let mut total_bytes = 0;

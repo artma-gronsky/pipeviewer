@@ -1,6 +1,6 @@
 use std::{
     fs::File,
-    io::{self, BufWriter, ErrorKind, Result, Write}
+    io::{self, BufWriter, ErrorKind, Result, Write},
 };
 
 use crossbeam::channel::Receiver;
