@@ -1,5 +1,10 @@
 use crossbeam::channel::Receiver;
-use std::io::Result;
+use crossterm::{
+    cursor, execute,
+    style::{self, Color, PrintStyledContent, Stylize},
+    terminal::{Clear, ClearType}
+};
+use std::io::{self, Result, Stderr, Write};
 use std::time::{Duration, Instant};
 
 pub fn stats_loop(silent: bool, stat_rx: Receiver<usize>) -> Result<()> {
@@ -14,8 +19,8 @@ pub fn stats_loop(silent: bool, stat_rx: Receiver<usize>) -> Result<()> {
         total_bytes += num_read;
         if !silent && timer.ready {
             timer.ready = false;
-            eprint!(
-                "\r{} {} [{:.0} b/s]",
+            output_progress(
+                &mut io::stderr(),
                 total_bytes,
                 start.elapsed().as_secs().as_time(),
                 rate_per_second
@@ -28,12 +33,13 @@ pub fn stats_loop(silent: bool, stat_rx: Receiver<usize>) -> Result<()> {
     }
 
     if !silent {
-        eprintln!(
-            "\r{} {} [{:.0} b/s]",
+        output_progress(
+            &mut io::stderr(),
             total_bytes,
             start.elapsed().as_secs().as_time(),
             rate_per_second
         );
+        eprintln!();
     }
     Ok(())
 }
@@ -80,4 +86,21 @@ impl Timer {
             self.period
         })
     }
+}
+
+
+fn output_progress(stderr: &mut Stderr, butes: usize, elapsed: String, rate: f64){
+    let bytes = style::style(format!("{} ", butes)).with(Color::Red);
+    let elapsed = style::style(elapsed).with(Color::Green);
+    let rate = style::style(format!(" [{:.0}b/s]", rate)).with(Color::Blue);
+    let _ = execute!(
+        stderr,
+        cursor::MoveToColumn(0),
+        Clear(ClearType::CurrentLine),
+        PrintStyledContent(bytes),
+        PrintStyledContent(elapsed),
+        PrintStyledContent(rate),
+    );
+
+    let _ = stderr.flush();
 }
