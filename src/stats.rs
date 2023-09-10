@@ -2,7 +2,7 @@ use crossbeam::channel::Receiver;
 use crossterm::{
     cursor, execute,
     style::{self, Color, PrintStyledContent, Stylize},
-    terminal::{Clear, ClearType}
+    terminal::{Clear, ClearType},
 };
 use std::io::{self, Result, Stderr, Write};
 use std::time::{Duration, Instant};
@@ -23,7 +23,7 @@ pub fn stats_loop(silent: bool, stat_rx: Receiver<usize>) -> Result<()> {
                 &mut io::stderr(),
                 total_bytes,
                 start.elapsed().as_secs().as_time(),
-                rate_per_second
+                rate_per_second,
             );
         }
 
@@ -37,7 +37,7 @@ pub fn stats_loop(silent: bool, stat_rx: Receiver<usize>) -> Result<()> {
             &mut io::stderr(),
             total_bytes,
             start.elapsed().as_secs().as_time(),
-            rate_per_second
+            rate_per_second,
         );
         eprintln!();
     }
@@ -88,8 +88,7 @@ impl Timer {
     }
 }
 
-
-fn output_progress(stderr: &mut Stderr, butes: usize, elapsed: String, rate: f64){
+fn output_progress(stderr: &mut Stderr, butes: usize, elapsed: String, rate: f64) {
     let bytes = style::style(format!("{} ", butes)).with(Color::Red);
     let elapsed = style::style(elapsed).with(Color::Green);
     let rate = style::style(format!(" [{:.0}b/s]", rate)).with(Color::Blue);
