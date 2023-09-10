@@ -1,8 +1,9 @@
 use crate::CHUNK_SIZE;
 use std::fs::File;
 use std::io::{self, BufReader, Read, Result};
+use std::sync::mpsc::Sender;
 
-pub fn read(infile: &str) -> Result<Vec<u8>> {
+pub fn read_loop(infile: &str, sender: Sender<Vec<u8>>) -> Result<()> {
     let mut reader: Box<dyn Read> = if !infile.is_empty() {
         Box::new(BufReader::new(File::open(infile)?))
     } else {
@@ -11,7 +12,18 @@ pub fn read(infile: &str) -> Result<Vec<u8>> {
 
     let mut buffer = [0; CHUNK_SIZE];
 
-    let num_read: usize = reader.read(&mut buffer)?;
+    loop {
+        let num_read = match reader.read(&mut buffer) {
+            Ok(size) if size == 0 => break,
+            Ok(v) => v,
+            Err(_) => break,
+        };
 
-    Ok(Vec::from(&buffer[..num_read]))
+        if sender.send(Vec::from(&buffer[..num_read])).is_err() {
+            break;
+        }
+    }
+
+    sender.send(Vec::new()).unwrap();
+    Ok(())
 }
