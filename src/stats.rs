@@ -1,22 +1,13 @@
-use std::{
-    io::Result,
-    sync::mpsc::{Receiver, Sender},
-};
-pub fn stats_loop(
-    silent: bool,
-    receiver: Receiver<Vec<u8>>,
-    write_sender: Sender<Vec<u8>>,
-) -> Result<()> {
+use std::io::Result;
+use crossbeam::channel::Receiver;
+
+pub fn stats_loop(silent: bool, stat_rx: Receiver<usize>) -> Result<()> {
     let mut total_bytes = 0;
 
-    while let Ok(buffer) = receiver.recv() {
-        let num_read = buffer.len();
+    while let Ok(num_read) = stat_rx.recv() {
         total_bytes += num_read;
         if !silent {
             eprint!("\r{}", total_bytes);
-        }
-        if write_sender.send(buffer).is_err() {
-            break;
         }
 
         if num_read == 0 {
